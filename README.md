@@ -15,6 +15,12 @@ conda activate faceai
 
 Install requirements:
 pip install -r requirements.txt
+numpy
+scikit-learn
+matplotlib
+opencv-python
+requests
+jupyter notebook
 
 ## Run
 
