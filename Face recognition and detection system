@@ -1,0 +1,119 @@
+#Cell 1
+
+import cv2
+import os
+import numpy as np
+from sklearn.neighbors import KNeighborsClassifier
+
+#Cell 2 
+
+if not os.path.exists("dataset"):
+    os.mkdir("dataset")
+
+#Cell 3
+
+cam = cv2.VideoCapture(0)
+detector = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+
+name = input("Enter Name: ")
+path = "dataset/" + name
+os.mkdir(path)
+
+count = 0
+
+while True:
+    ret, frame = cam.read()
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = detector.detectMultiScale(gray, 1.3, 5)
+
+    for (x,y,w,h) in faces:
+        count += 1
+        face = gray[y:y+h, x:x+w]
+        face = cv2.resize(face, (100,100))
+        cv2.imwrite(f"{path}/{count}.jpg", face)
+        cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
+
+    cv2.imshow("Capture", frame)
+    if cv2.waitKey(1) == 27 or count >= 50:
+        break
+
+cam.release()
+cv2.destroyAllWindows()
+
+#Cell 4
+X = []
+y = []
+
+for person in os.listdir("dataset"):
+    for img in os.listdir("dataset/" + person):
+        image = cv2.imread("dataset/" + person + "/" + img, 0)
+        X.append(image.flatten())
+        y.append(person)
+
+X = np.array(X)
+
+if len(X) == 0:
+    print("No training data found.")
+
+#Cell 5
+
+# Only fit the model if we have training data
+if X.size == 0 or len(y) == 0:
+	print("No training data found. Please capture face images in the 'dataset' directory and re-run this cell.")
+else:
+	# Ensure X is 2D (single sample -> reshape to 1 x n_features)
+	if X.ndim == 1:
+		X = X.reshape(1, -1)
+	model = KNeighborsClassifier(n_neighbors=3)
+	model.fit(X, y)
+	print(f"Model trained on {len(y)} samples.")
+
+#Cell 6
+
+cam = cv2.VideoCapture(0)
+
+while True:
+    ret, frame = cam.read()
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = detector.detectMultiScale(gray, 1.3, 5)
+
+    for (x,y,w,h) in faces:
+        face = gray[y:y+h, x:x+w]
+        face = cv2.resize(face, (100,100)).flatten().reshape(1,-1)
+        name = model.predict(face)[0]
+
+        cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
+        cv2.putText(frame,name,(x,y-10),
+                    cv2.FONT_HERSHEY_SIMPLEX,1,(255,0,0),2)
+
+    cv2.imshow("Face Recognition", frame)
+    if cv2.waitKey(1) == 27:
+        break
+
+cam.release()
+cv2.destroyAllWindows()
+
+
+#Cell 7 
+import matplotlib.pyplot as plt
+
+img_path = input("Enter image path: ")
+
+img = cv2.imread(img_path)
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+faces = detector.detectMultiScale(gray, 1.3, 5)
+
+for (x,y,w,h) in faces:
+    face = gray[y:y+h, x:x+w]
+    face = cv2.resize(face, (100,100)).flatten().reshape(1,-1)
+    name = model.predict(face)[0]
+
+    cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
+    cv2.putText(img,name,(x,y-10),
+                cv2.FONT_HERSHEY_SIMPLEX,1,(0,255,0),2)
+
+plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+plt.axis("off")
+
+If Stuck in Face Recognition module click the Esc Key to close window
